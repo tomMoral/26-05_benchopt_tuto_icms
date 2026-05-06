@@ -37,9 +37,9 @@ class Objective(BaseObjective):
         psnr = dinv.metric.PSNR()(x_hat, x_true).item()
         return dict(
             psnr=psnr,
-            x_hat=x_hat.cpu(),
-            x_true=self.x_true.cpu(),
-            y=self.y.cpu(),
+            x_hat=x_hat.cpu().numpy(),
+            x_true=self.x_true.cpu().numpy(),
+            y=self.y.cpu().numpy(),
         )
 
     def get_one_result(self):
