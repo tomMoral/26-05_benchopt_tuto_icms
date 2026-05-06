@@ -1,0 +1,636 @@
+\documentclass[unknownkeysallowed]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{beamer_tom}
+\graphicspath{{./images/}{./sharedimages/}}
+
+
+\usepackage{pythonhighlight}
+
+\usepackage{dirtree}
+\newcommand{\Benchopt}{\texttt{Benchopt}}
+\newcommand{\TutorialRepoURL}{https://github.com/tomMoral/26-05\_benchopt\_tuto\_icms}
+\newcommand{\TutorialBenchDir}{\texttt{denoising}}
+\newcommand{\BaseSolver}{\texttt{DRUNet}}
+\newcommand{\NewSolver}{\texttt{DnCNN}}
+\newcommand{\NewBenchmark}{\texttt{blind\_deblur}}
+
+% -----------------------------------------------------------------------------
+% RETARGETING NOTES (for another tutorial repo/benchmark)
+% 1) Update these macros first:
+%    - \TutorialRepoURL
+%    - \TutorialBenchDir
+%    - \BaseSolver / \NewSolver
+%    - \NewBenchmark
+% 2) Update install/run commands in the "Install and run the benchmark" frame.
+% 3) Update the file paths and metric names in:
+%    - "What happens during install and run?"
+%    - Solver Step 3 validation checklist
+%    - New benchmark Step 2 protocol changes
+% 4) Update benchmark-specific solver filenames in "Step 3: add solvers and
+%    validate" for the new benchmark section.
+% -----------------------------------------------------------------------------
+
+\definecolor{tomcolor}{rgb}{0.,.3,.6}
+\lstset{basicstyle=\color{tomcolor}\scriptsize\ttfamily}
+
+
+\author{Benchopt contributors}
+\collaborators[none]{\vskip-1em}
+\title{
+    Hands-on \texttt{benchopt}\\
+    Imaging benchmarks tutorial
+}
+\setbeamertemplate{title page}[frame]
+\def\extraLogo{\includegraphics[height=1.5cm]{logo_benchopt.png}}
+
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%             Headers               %%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \begin{frame}
+        \titlepage
+    \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}{Contributors from...}
+%     \centering
+%     \includegraphics[width=100px]{logo_inria_horiz.pdf} \hspace{1mm}
+%     \includegraphics[height=45px]{um_logo.pdf} \hspace{1mm}
+%     \includegraphics[height=35px]{logo_berkeley.png} \hspace{1mm}
+%     \\[7mm]
+%     \includegraphics[height=50px]{logo_cnrs.pdf} \hspace{5mm}
+%     \includegraphics[height=50px]{logo_lund} \hspace{5mm}
+%     \includegraphics[height=50px]{logo_telecom.pdf} \hspace{5mm}
+%     \includegraphics[height=50px]{logo_univ_luxembourg.pdf} \\[4mm]
+%     \includegraphics[height=40px]{logo_ens.png}
+%     % \includegraphics[height=40px]{}
+% \end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}{Why benchmarks matter}
+%
+%     Benchmarks are central to empirical progress in ML:\\[.5em]
+%     \begin{itemize}
+%         \item They define what we compare and report.
+%         \item They make progress measurable across papers.
+%         \item They provide the baselines used by the whole community.
+%     \end{itemize}
+%
+%     \pause
+%     \vskip2em
+%     \strongpoint{No reliable benchmark, no reliable scientific claim in ML.}
+%
+% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}{The hidden cost of benchmarking}
+%
+%     Different teams often rebuild the same engineering stack:\\[.5em]
+%     \begin{itemize}
+%         \item Install and environment creation.
+%         \item Dependency management and data preparation.
+%         \item Run orchestration, evaluation and plotting.
+%     \end{itemize}
+%
+%     \vskip1.5em
+%     \strongpoint{Repeated tooling slows down science and creates avoidable burden.}
+%
+% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}{What \Benchopt{} changes}
+%
+%     \Benchopt{} factorizes the common benchmark tooling:\\[.5em]
+%     \begin{itemize}
+%         \item Standard interfaces: objective, dataset, solver.
+%         \item Reusable workflow: install, run, test, compare, share.
+%         \item Run anywhere: explicit dependencies and controlled environments.
+%         \item Reliable reruns: controlled randomness and reproducible protocols.
+%         \item New in recent releases: merge runs and publish to GitHub/Hugging Face.
+%     \end{itemize}
+%
+%     \pause
+%     \vskip1.5em
+%     \strongpoint{Benchopt does not replace benchmarks,\\it removes duplicated plumbing.}
+%
+% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}{Benchopt scope}
+%
+%     \Benchopt{} turns benchmark code into reusable research infrastructure.
+%     \vskip1.5em
+%
+%     {\centering
+%     \vskip2em
+%     {\Large\Benchopt{} produces \textbf{open}, \textbf{reproducible}, \textbf{extendable} benchmarks.}\\
+%     }
+%     \vskip1em
+%     \begin{itemize}
+%         \item Comparable and fairer evaluations,
+%         \item Faster iterations on methods and datasets,
+%         \item Lower engineering overhead across projects.
+%     \end{itemize}
+%
+%     \vskip1.2em
+%     {\centering And keeps them \textbf{maintainable} through explicit interfaces\\and tests.\\}
+%
+% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}{Extra tools for easier benchmarking}
+%
+%     \begin{itemize}
+%         \item \textbf{Integrate broadly:} use implementations from Python, R, Julia, or binaries.
+%         \item \textbf{Scale experiments:} run in parallel locally or on distributed backends.
+%         \item \textbf{Save time:} cache results to avoid recomputing unchanged runs.
+%         \item \textbf{Trust comparisons:} control randomness with seeds and stable protocols.
+%         \item \textbf{Share outcomes:} merge and publish results from multiple runs, easy visualization.
+%     \end{itemize}
+%
+%     \vskip0.7em
+%     \centering
+%     \includegraphics[width=0.8\linewidth]{tweet_rahimi.png}
+%
+% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}{How does \Benchopt{} do it?}
+%
+% \Benchopt{} provides a framework to organize and run benchmarks:
+% \begin{itemize}
+%     \item Each benchmark is a repository
+%     \item \Benchopt{} is a \texttt{Python} CLI to install, run, test and share them
+% \end{itemize}
+%
+% \vskip1em
+% Examples of existing benchmarks:
+% \vskip.5em
+% \begin{minipage}{0.5\linewidth}
+%     {\small
+%     \begin{itemize}
+%         \item \href{https://github.com/benchopt/benchmark_resnet_classif}{\bf Image Classification (resnet)}
+%         \item \href{https://github.com/benchopt/benchmark_logreg_l2}{\bf Logistic regression}
+%         \item \href{https://github.com/benchopt/benchmark_lasso}{\bf Lasso}
+%         \item \href{https://github.com/benchopt/benchmark_linear_ica}{\bf ICA}
+%     \end{itemize}
+%     }
+% \end{minipage}
+% \begin{minipage}{0.48\linewidth}
+%     {\small
+%     \begin{itemize}
+%         \item \href{https://github.com/benchopt/benchmark_tv_1d}{\bf Total Variation}
+%         \item \href{https://github.com/benchopt/benchmark_bilevel}{\bf Bilevel Optimization}
+%         \item \href{https://github.com/benchopt/benchmark_bci}{\bf Brain Computer Interface}
+%         \item \href{https://github.com/benchopt/?q=benchmark_&type=all&language=&sort=name}{\bf \dots}
+%     \end{itemize}
+%     }
+% \end{minipage}
+% \vskip2em
+%
+% \centering
+% Start yours with \url{https://github.com/benchopt/template_benchmark} or \url{https://github.com/benchopt/template_benchmark_ml}!
+% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% -----------------------------------------------------------------------------
+% TIMING NOTES (1h50 hands-on)
+% - ~15 min : Example 1 — Denoising: run existing + add a solver
+% - ~40 min : Participants add their solver, run benchopt
+% - ~15 min : Example 2 — Blind deblurring: objective skeleton walkthrough
+% - ~35 min : Participants write objective.py, run both solvers
+% -  ~5 min : Wrap-up, share solutions, Q&A
+%
+% IF SHORT ON TIME
+% - Keep: install/run workflow + 3 solver steps + 2 objective steps
+% - Skip: Components/Flow/Structure details + long benchmark example list
+% -----------------------------------------------------------------------------
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Tutorial}
+
+    \centering
+    \huge Sorry I failed to release for the tutorial....\\[2em]
+
+    \pause
+
+    But you will get to ride on the edge!\\[1em]
+
+    \large \texttt{pip install -U git+https://github.com/benchopt/benchopt}
+
+    \vskip2em
+    You will just need an env with deep-inverse, benchopt and optinonally ptwt for the wavelet baseline.\\[1em]
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Tutorial}
+
+    \centering
+    \huge Running a benchmark!
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{Install and run the benchmark}
+
+    \textbf{Repository used in the tutorial:}\\[.3em]
+    \url{\TutorialRepoURL}
+
+    \vskip1em
+    \textbf{Minimal workflow:}
+
+\begin{lstlisting}[language=bash]
+git clone https://github.com/tomMoral/26-05_benchopt_tuto_icms tuto_benchopt
+cd tuto_benchopt/01-denoising
+pip install benchopt
+benchopt install .
+benchopt run .
+\end{lstlisting}
+
+    \vskip0.7em
+    \strongpoint{Once \Benchopt{} is installed, two commands are enough: install the benchmark, then run it.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{What happens during install and run?}
+
+    For this benchmark, \Benchopt{} will automatically:\\[.5em]
+    \begin{itemize}
+        \item Load the objective, dataset and available solvers.
+        \item Install the benchmark requirements declared in the files.
+        \item Run the available solver on the \texttt{CBSD} dataset.
+        \item Collect metrics such as \texttt{psnr} and \texttt{ssim}.
+    \end{itemize}
+
+    \vskip1.2em
+    \textbf{In this repo:}
+    \begin{itemize}
+        \item Dataset: \texttt{datasets/cbsd.py} — CBSD images, parametrized by $\sigma$
+        \item Objective: \texttt{objective.py} — adds noise, computes PSNR
+        \item Solvers: \texttt{solvers/wavelet.py}, \texttt{solvers/dncnn.py}
+        \item Plot: \texttt{plots/denoised\_images.py} -- display results
+    \end{itemize}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Components of a benchmark}
+
+    \centering
+    \vspace*{-5mm}
+    \textbf{3 components}: Objective, Dataset, Solver
+
+    \vskip3em
+    \includegraphics[width=\linewidth]{benchopt_schema.pdf}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Tutorial — Example 1}
+
+    \centering
+    \huge Adding a denoiser solver!
+
+    \vskip1em
+    {\large\textit{Benchmark:} \texttt{denoising}}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Structure of a benchmark}
+
+    \begin{minipage}{0.45\linewidth}
+        \dirtree{%
+        .1 benchmark/.
+        .2 objective.py.
+        .2 datasets/.
+        .3 dataset1.py.
+        .3 dataset2.py.
+        .2 solvers/.
+        .3 solver1.py.
+        .3 solver2.py.
+    }
+    \end{minipage}
+    \begin{minipage}{0.45\linewidth}
+
+    \textbf{Modular \& extendable}
+    \vspace*{5mm}
+
+    New solver? add a file
+
+    New dataset? add a file
+
+    New metric? modify objective
+    \end{minipage}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame[t]{
+    \frametitle{A modular framework to create benchmarks}
+
+    \centering
+    \vskip.5em
+    \textbf{3 components}: Objective, Dataset, Solver
+
+    \vskip2em
+    \includegraphics[width=\linewidth]{benchopt_schema_dependency.png}
+
+    \pause
+    \strongpoint{Benchopt defines the interface between components.}
+
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame[t]{
+    \frametitle{Explicit preprocessing}
+
+    \inputpython{benchopt_dataset.py}{1}{19}
+
+    \pause
+    \strongpoint{Reproducible benchmark by design!}
+
+    \vskip1em
+    \textbf{Goal:} if you use the same setup, you don't need to re-run the baseline methods!
+
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame[t]{
+    \frametitle{Explicit evaluation protocol and requirements}
+
+    \inputpython{benchopt_objective.py}{1}{29}
+
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame[t]{
+    \frametitle{Explicit parameters}
+
+    \inputpython{benchopt_solver.py}{1}{26}
+
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{Step 1: add a new solver file}
+
+    \textbf{Goal:} add a new deep denoiser without changing the benchmark protocol.
+
+    \vskip1em
+    \begin{itemize}
+        \item Open \texttt{solvers/skeleton.py} — your starting point
+        \item Rename the solver (\texttt{name} attribute) to \NewSolver{}
+        \item Instantiate your denoiser in \texttt{run()}, e.g.:
+\begin{lstlisting}[language=Python]
+dinv.models.DnCNN(pretrained='download', device=self.device)
+\end{lstlisting}
+        \item Keep \texttt{sampling\_strategy = 'run\_once'} — no loop needed
+        \item Save the output in \texttt{self.x\_hat}
+    \end{itemize}
+
+    \strongpoint{Same interface, same objective, same dataset: only the model changes.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{Step 2: plug in your denoiser}
+
+    All deepinv denoisers share the same calling convention:\\[.5em]
+    \begin{center}
+    \texttt{x\_hat = denoiser(y, sigma)}
+    \end{center}
+
+    \vskip0.8em
+    Some models to try (all available with pretrained weights):
+
+    \vskip0.5em
+    \begin{tabular}{lll}
+        \textbf{Model} & \textbf{Type} & \textbf{Key property} \\
+        \hline
+        \texttt{DnCNN}  & deep, fixed $\sigma$ & fast, good baseline \\
+        \texttt{SCUNet} & deep, adaptive $\sigma$ & robust across levels \\
+        \texttt{SwinIR} & transformer & state-of-the-art \\
+    \end{tabular}
+
+    \vskip1em
+    \strongpoint{Explore \href{https://deepinv.github.io/deepinv/auto_examples/models/demo_denoiser_tour.html}{deepinv denoiser tour} for the full list.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{Step 3: validate and compare}
+
+    \Benchopt{} automatically discovers the new solver and compares it.
+
+    \vskip1em
+\begin{lstlisting}[language=bash]
+benchopt test . -k mysolver --skip-env
+benchopt run . -s MySolver -s DRUNet -s WaveletDict
+\end{lstlisting}
+
+    \vskip0.7em
+    What to check:
+    \begin{itemize}
+        \item The solver file is picked up automatically.
+        \item \texttt{get\_result()} returns \texttt{\{"x\_hat": ...\}}.
+        \item \texttt{psnr} is reported alongside the existing solvers.
+        \item No change needed in the objective or dataset.
+    \end{itemize}
+
+    \vskip0.7em
+    \strongpoint{Adding a solver means writing one compatible file — nothing else changes.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Tutorial — Example 2}
+
+    \centering
+    \huge Writing the objective\\ for blind deblurring!
+
+    \vskip1em
+    {\large\textit{Benchmark:} \texttt{blind\_deblur}}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Step 1: understand what is given}
+
+    \textbf{Goal:} implement \texttt{objective.py} for a blind deblurring benchmark.
+    The solvers already exist — only the objective is missing.
+
+    \vskip1em
+    \textbf{Given for free} (non-obvious, provided in the skeleton):
+    \begin{itemize}
+        \item \texttt{set\_data()} — stores $x$, $y$, physics, \texttt{kernel\_size}
+        \item \texttt{get\_one\_result()} — delta kernel baseline
+    \end{itemize}
+
+    \vskip0.7em
+    \textbf{Yours to implement:}
+    \begin{itemize}
+        \item \texttt{get\_objective()} — what to expose to solvers
+        \item \texttt{evaluate\_result()} — dual metric (PSNR + kernel MSE)
+        \item \texttt{save\_final\_results()} — persist both \texttt{x\_hat} and \texttt{k\_hat}
+    \end{itemize}
+
+    \strongpoint{The \texttt{while callback()} pattern is illustrated by \texttt{dip\_selfdeblur.py}.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{Step 2: implement the objective methods}
+
+    \textbf{\texttt{get\_objective}:} expose \texttt{y} and \texttt{kernel\_size} — do NOT expose the true kernel.
+
+    \vskip0.7em
+    \textbf{\texttt{evaluate\_result}:} dual metric
+    \begin{itemize}
+        \item Image quality: $\mathrm{PSNR}(\hat{x}, x_{\mathrm{true}})$
+        \item Kernel accuracy: normalise both kernels, then compute MSE
+        $$\mathrm{kernel\_mse} = \left\| \frac{\hat{k}}{\|\hat{k}\|_1} - \frac{k}{\|k\|_1} \right\|_2^2$$
+    \end{itemize}
+
+    \vskip0.5em
+    \textbf{\texttt{save\_final\_results}:} persist both estimates to CPU
+\begin{lstlisting}[language=Python]
+return dict(x_hat=x_hat.cpu(), k_hat=k_hat.cpu())
+\end{lstlisting}
+
+    \strongpoint{The stopping criterion monitors \texttt{psnr} — make sure it is in the returned dict.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{Step 3: validate the objective}
+
+    \Benchopt{} runs both solvers and checks your objective.
+
+    \vskip1em
+\begin{lstlisting}[language=bash]
+benchopt test . --skip-env
+benchopt run . -s Bilevel-PGD -s DIP-SelfDeblur
+\end{lstlisting}
+
+    \vskip0.7em
+    What to check:
+    \begin{itemize}
+        \item \texttt{psnr} and \texttt{kernel\_mse} are reported for both solvers.
+        \item The convergence curve improves over the delta-kernel baseline.
+        \item The \textbf{Kernel} plot shows the estimated blur kernel per solver.
+        \item Both solvers complete within the time budget.
+    \end{itemize}
+
+    \vskip0.7em
+    \strongpoint{Writing an objective means defining the protocol once —\\both solvers run against it automatically.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{\Benchopt{} Roadmap}
+    \begin{itemize}\itemsep1em
+        \item \textbf{Simpler solver evaluation --} make custom solver integration more direct, for instance with \texttt{eval\_solver(run\_func)}
+        \item \textbf{Better visualization tools -- } explore results more easily, in particular for image tasks
+        \item \textbf{More reference benchmarks --} grow the benchmark collection with community contributions
+    \end{itemize}
+
+
+    \strongpoint{\Benchopt{} is by no means finished or complete!}
+
+    \vskip2em
+    It is useful to a growing group of people but we need to gather more feedbacks to fit the needs of the community.\\[2em]
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Benchopt links and resources}
+
+    \begin{columns}[T]
+        \column{.5\textwidth}
+        \vskip1em
+        \begin{itemize}\itemsep1em
+            \item Documentation:\\ \href{https://benchopt.github.io}{benchopt.github.io}
+            \item Main repository: \href{https://github.com/benchopt/benchopt}{github.com/benchopt/benchopt}
+            \item Benchmark templates: \href{https://github.com/benchopt/template_benchmark}{github.com/benchopt/template\_benchmark}\\
+            \href{https://github.com/benchopt/template_benchmark_ml}{github.com/benchopt/template\_benchmark\_ml}
+        \end{itemize}
+
+        \column{.36\textwidth}
+        \centering
+        \includegraphics[width=.8\textwidth]{qr_benchopt_repos.png}\\[.5em]
+    \end{columns}
+    \vskip1.2em
+    \strongpoint{If this tutorial was useful, please star the \texttt{benchopt} repo and share it.}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
