@@ -7,6 +7,8 @@ import deepinv as dinv
 class Objective(BaseObjective):
 
     name = "Denoising"
+    url = "https://github.com/tommoral/26-05_benchopt_tuto_icms/01-denoising"
+
     requirements = ["pip::deepinv"]
     min_benchopt_version = "1.9"
 
