@@ -1,0 +1,11 @@
+# Cache folders
+**/__pycache__/
+**/__cache__/
+**/data/
+**/outputs/
+**/*.egg-info/
+**/build/
+
+# IDE config folders
+**/.vscode/
+

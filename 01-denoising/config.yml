@@ -1,0 +1,4 @@
+plots:
+  - denoised_images
+  - table
+  - boxplot
