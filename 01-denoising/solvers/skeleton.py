@@ -1,7 +1,7 @@
 from benchopt import BaseSolver
 
-import torch
-import deepinv as dinv
+import torch  # noqa: F401
+import deepinv as dinv  # noqa: F401
 
 
 class Solver(BaseSolver):
@@ -38,3 +38,4 @@ class Solver(BaseSolver):
     def get_result(self):
         # TODO: return your result as a dict compatible with
         # evaluate_result() in objective.py (i.e. containing 'x_hat')
+        raise NotImplementedError("Return your result in get_result()!")

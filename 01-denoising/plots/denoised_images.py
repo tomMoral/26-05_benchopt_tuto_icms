@@ -16,27 +16,42 @@ class Plot(BasePlot):
     def plot(self, df, dataset, objective):
         traces = []
 
-        # Take the last row per solver (run_once → only one row anyway)
-        df_last = df.groupby("solver_name").last().reset_index()
+        rep_col = "idx_rep" if "idx_rep" in df.columns else None
 
-        # Ground truth and noisy input are the same across solvers — use first
-        first = df_last.iloc[0]
-        if "objective_x_true" in df_last.columns:
+        # Ground truth is constant across repetitions — take from first row
+        first = df.iloc[0]
+        if "objective_x_true" in df.columns:
             traces.append({
                 "image": _to_display(first["objective_x_true"]),
                 "label": "Ground truth",
             })
-        if "objective_y" in df_last.columns:
+
+        # Noisy input varies per repetition (different noise seed)
+        if "objective_y" in df.columns:
+            if rep_col is not None:
+                frames_y = [
+                    _to_display(row["objective_y"])
+                    for _, row in df.sort_values(rep_col)
+                    .drop_duplicates(rep_col).iterrows()
+                ]
+            else:
+                frames_y = [_to_display(first["objective_y"])]
+
             traces.append({
-                "image": _to_display(first["objective_y"]),
+                "image": frames_y if len(frames_y) > 1 else frames_y[0],
                 "label": "Noisy input",
             })
 
-        # One entry per solver
-        for _, row in df_last.iterrows():
+        # One entry per solver; collect all repetitions as GIF frames
+        for solver_name, grp in df.groupby("solver_name"):
+            if rep_col is not None:
+                grp = grp.sort_values(rep_col)
+            frames = [_to_display(row["objective_x_hat"])
+                      for _, row in grp.iterrows()]
+            psnr = grp["objective_psnr"].mean()
             traces.append({
-                "image": _to_display(row["objective_x_hat"]),
-                "label": row["solver_name"],
+                "image": frames if len(frames) > 1 else frames[0],
+                "label": f"{solver_name}\n PSNR: {psnr:.2f} dB",
             })
 
         return traces
