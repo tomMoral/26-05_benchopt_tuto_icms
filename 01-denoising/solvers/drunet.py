@@ -2,24 +2,22 @@ from benchopt import BaseSolver
 
 import torch
 import deepinv as dinv
-# Make sure ptwt is installed for the WaveletDictDenoiser
-# as it is used internally by the model.
-import ptwt  # noqa: F401
 
 
 class Solver(BaseSolver):
-    """Denoising with WaveletDictDenoiser (classical, non-iterative)."""
+    """Denoising with DrUNet (pretrained deep network, non-iterative)."""
 
-    name = "WaveletDict"
-
-    requirements = ["pip::ptwt"]
+    name = "DrUNet"
 
     def set_objective(self, y, sigma):
         self.y = y
         self.sigma = sigma
+        self.device = y.device
 
     def run(self, _):
-        denoiser = dinv.models.WaveletDictDenoiser()
+        denoiser = dinv.models.DRUNet(
+            pretrained='download', device=self.device
+        )
         with torch.no_grad():
             self.x_hat = denoiser(self.y, self.sigma)
 

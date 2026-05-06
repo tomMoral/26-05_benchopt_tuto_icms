@@ -2,3 +2,17 @@ plots:
   - denoised_images
   - table
   - boxplot
+  - objective_curve
+plot_configs:
+  Qualitative results:
+    plot_kind: denoised_images
+  Pareto Plot:
+    objective_curve_dataset: CBSD[img_name=CBSD_0010.png,sigma=0.3]
+    objective_curve_objective: Denoising
+    objective_curve_objective_column: objective_ssim
+    objective_curve_X_axis: Time
+    plot_kind: objective_curve
+    scale: loglog
+    with_quantiles: true
+    suboptimal_curve: false
+    relative_curve: false

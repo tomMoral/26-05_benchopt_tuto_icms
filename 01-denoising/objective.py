@@ -35,8 +35,10 @@ class Objective(BaseObjective):
     def evaluate_result(self, x_hat):
         x_true = self.x_true.to(x_hat.device)
         psnr = dinv.metric.PSNR()(x_hat, x_true).item()
+        ssim = dinv.metric.SSIM()(x_hat, x_true).item()
         return dict(
             psnr=psnr,
+            ssim=ssim,
             x_hat=x_hat.cpu().numpy(),
             x_true=self.x_true.cpu().numpy(),
             y=self.y.cpu().numpy(),
