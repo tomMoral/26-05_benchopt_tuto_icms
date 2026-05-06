@@ -9,6 +9,8 @@ class Solver(BaseSolver):
 
     name = "WaveletDict"
 
+    requirements = ["pip::ptwt"]
+
     def set_objective(self, y, sigma):
         self.y = y
         self.sigma = sigma
